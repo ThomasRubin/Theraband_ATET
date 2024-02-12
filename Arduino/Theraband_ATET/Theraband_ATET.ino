@@ -10,23 +10,32 @@ Adafruit_VL6180X vl = Adafruit_VL6180X();
 #define RANGE_LOW_THRESHOLD 65
 #define RANGE_HIGH_THRESHOLD 85
 
+#define print_serial(char s[])
+
+bool isSerial = true;
 
 void setup() {
   Serial.begin(115200);
 
-  while (!Serial) 
+  uint8_t serialCount = 0;
+  while (!Serial) {
+    if(serialCount++ > 100) {
+      isSerial = false;
+      break;
+    }
     delay(1);
+  }
 
   pinMode(LED_PIN_YELLOW, OUTPUT);
   pinMode(LED_PIN_GREEN, OUTPUT);
   pinMode(LED_PIN_RED, OUTPUT);
 
-  Serial.println("Adafruit VL6180x test!");
+  if(isSerial) Serial.println("Adafruit VL6180x test!");
   if (! vl.begin()) {
-    Serial.println("Failed to find sensor");
+    if(isSerial) Serial.println("Failed to find sensor");
     while (1);
   }
-  Serial.println("Sensor found!");
+  if(isSerial) Serial.println("Sensor found!");
 }
 
 void loop() {
