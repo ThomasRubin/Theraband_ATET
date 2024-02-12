@@ -10,7 +10,7 @@ Adafruit_VL6180X vl = Adafruit_VL6180X();
 #define RANGE_LOW_THRESHOLD 65
 #define RANGE_HIGH_THRESHOLD 85
 
-#define print_serial(char s[])
+#define PRINT_SERIAL(Text) if(isSerial) Serial.println(#Text);
 
 bool isSerial = true;
 
@@ -30,54 +30,54 @@ void setup() {
   pinMode(LED_PIN_GREEN, OUTPUT);
   pinMode(LED_PIN_RED, OUTPUT);
 
-  if(isSerial) Serial.println("Adafruit VL6180x test!");
+  PRINT_SERIAL("Adafruit VL6180x test!");
   if (! vl.begin()) {
-    if(isSerial) Serial.println("Failed to find sensor");
+    PRINT_SERIAL("Failed to find sensor");
     while (1);
   }
-  if(isSerial) Serial.println("Sensor found!");
+  PRINT_SERIAL("Sensor found!");
 }
 
 void loop() {
   float lux = vl.readLux(VL6180X_ALS_GAIN_5);
 
-  Serial.print("Lux: "); Serial.println(lux);
+  Serial.print("Lux: "); PRINT_SERIAL(lux);
   
   uint8_t range = vl.readRange();
   uint8_t status = vl.readRangeStatus();
 
   if (status == VL6180X_ERROR_NONE) {
-    Serial.print("Range: "); Serial.println(range);
+    Serial.print("Range: "); PRINT_SERIAL(range);
   }
 
   // Some error occurred, print it out!
   
   if  ((status >= VL6180X_ERROR_SYSERR_1) && (status <= VL6180X_ERROR_SYSERR_5)) {
-    Serial.println("System error");
+    PRINT_SERIAL("System error");
   }
   else if (status == VL6180X_ERROR_ECEFAIL) {
-    Serial.println("ECE failure");
+    PRINT_SERIAL("ECE failure");
   }
   else if (status == VL6180X_ERROR_NOCONVERGE) {
-    Serial.println("No convergence");
+    PRINT_SERIAL("No convergence");
   }
   else if (status == VL6180X_ERROR_RANGEIGNORE) {
-    Serial.println("Ignoring range");
+    PRINT_SERIAL("Ignoring range");
   }
   else if (status == VL6180X_ERROR_SNR) {
-    Serial.println("Signal/Noise error");
+    PRINT_SERIAL("Signal/Noise error");
   }
   else if (status == VL6180X_ERROR_RAWUFLOW) {
-    Serial.println("Raw reading underflow");
+    PRINT_SERIAL("Raw reading underflow");
   }
   else if (status == VL6180X_ERROR_RAWOFLOW) {
-    Serial.println("Raw reading overflow");
+    PRINT_SERIAL("Raw reading overflow");
   }
   else if (status == VL6180X_ERROR_RANGEUFLOW) {
-    Serial.println("Range reading underflow");
+    PRINT_SERIAL("Range reading underflow");
   }
   else if (status == VL6180X_ERROR_RANGEOFLOW) {
-    Serial.println("Range reading overflow");
+    PRINT_SERIAL("Range reading overflow");
   }
 
   if (range < RANGE_LOW_THRESHOLD) {
