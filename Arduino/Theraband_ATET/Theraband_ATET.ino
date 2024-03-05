@@ -5,9 +5,9 @@ Adafruit_VL6180X vl = Adafruit_VL6180X();
 
 TwoWire *wire = new TwoWire(20,21);
 
-#define LED_PIN_YELLOW      10
-#define LED_PIN_GREEN       16
-#define LED_PIN_RED         17
+#define LED_PIN_YELLOW      0
+#define LED_PIN_GREEN       1
+#define LED_PIN_RED         2
 
 #define RANGE_LOW_THRESHOLD 65
 #define RANGE_HIGH_THRESHOLD 85
