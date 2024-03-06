@@ -9,12 +9,17 @@ TwoWire *wire = new TwoWire(20,21);
 #define LED_PIN_GREEN       1
 #define LED_PIN_RED         2
 
+#define PIN_START_SAMPLE_BUTTON 16
+
 #define RANGE_LOW_THRESHOLD 65
 #define RANGE_HIGH_THRESHOLD 85
 
 #define SERIAL_PRINT_TEXT(text) if(isSerial) Serial.println(#text);
 
 bool isSerial = true;
+bool isCalibrating = false;
+uint8_t sample_count = 0;
+#define MAX_SAMPLES 20
 
 void setup() {
   Serial.begin(115200);
@@ -28,32 +33,36 @@ void setup() {
     delay(1);
   }
 
-
-
   pinMode(LED_PIN_YELLOW, OUTPUT);
   pinMode(LED_PIN_GREEN, OUTPUT);
   pinMode(LED_PIN_RED, OUTPUT);
 
+  pinMode(PIN_START_SAMPLE_BUTTON, INPUT);
+
   SERIAL_PRINT_TEXT("Adafruit VL6180x test!"); 
-
-  
-
   if (! vl.begin(wire)) {
     SERIAL_PRINT_TEXT("Failed to find sensor");
     while (1);
   }
   SERIAL_PRINT_TEXT("Sensor found!");
+
+  digitalWrite(LED_PIN_GREEN, HIGH);
+
 }
 
 void loop() {
-  float lux = vl.readLux(VL6180X_ALS_GAIN_5);
+  if(digitalRead(PIN_START_SAMPLE_BUTTON)) {
+    isCalibrating = true;
+    digitalWrite(LED_PIN_RED, HIGH);
+    digitalWrite(LED_PIN_GREEN, LOW);
 
-  if (isSerial) {Serial.print("Lux: "); Serial.println(lux);}
+    SERIAL_PRINT_TEXT("Start new sample series.")
+  }
   
-  uint8_t range = vl.readRange();
-  uint8_t status = vl.readRangeStatus();
+  while(isCalibrating) {
+    uint8_t range = vl.readRange();
+    uint8_t status = vl.readRangeStatus();
 
-  if (isSerial) {
     if (status == VL6180X_ERROR_NONE) {
       Serial.print("Range: "); Serial.println(range);
     }
@@ -87,20 +96,17 @@ void loop() {
     else if (status == VL6180X_ERROR_RANGEOFLOW) {
       Serial.println("Range reading overflow");
     }
-  }
 
-  if (range < RANGE_LOW_THRESHOLD) {
-    digitalWrite(LED_PIN_YELLOW, HIGH);
-    digitalWrite(LED_PIN_GREEN, LOW);
-    digitalWrite(LED_PIN_RED, LOW);
-  } else if (range > RANGE_HIGH_THRESHOLD) {
-    digitalWrite(LED_PIN_YELLOW, LOW);
-    digitalWrite(LED_PIN_GREEN, LOW);
-    digitalWrite(LED_PIN_RED, HIGH);
-  } else {
-    digitalWrite(LED_PIN_YELLOW, LOW);
-    digitalWrite(LED_PIN_GREEN, HIGH);
-    digitalWrite(LED_PIN_RED, LOW);
+    sample_count++;
+
+    if(sample_count == MAX_SAMPLES){
+      isCalibrating = false;
+      sample_count = 0;
+      digitalWrite(LED_PIN_RED, LOW);
+      digitalWrite(LED_PIN_GREEN, HIGH);
+    }
+
+    delay(50);
   }
 
 
