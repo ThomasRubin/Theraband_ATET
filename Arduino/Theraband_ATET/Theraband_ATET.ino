@@ -14,23 +14,25 @@ TwoWire *wire = new TwoWire(20,21);
 #define RANGE_LOW_THRESHOLD 65
 #define RANGE_HIGH_THRESHOLD 85
 
-#define SERIAL_PRINT_TEXT(text) if(isSerial) Serial.println(#text);
+#define MAX_SAMPLES 10
+#define MAX_DISTANCE 3
 
-bool isSerial = true;
 bool isCalibrating = false;
 uint8_t sample_count = 0;
-#define MAX_SAMPLES 20
+float refDistance_mm;
+uint8_t samples[MAX_SAMPLES];
+
+
+// functions
+void evaluateError(uint8_t status); // Error of VL6180x
+float averageValue(const uint8_t *samplesPtr);
+float distance(float value1, float value2);
 
 void setup() {
   Serial.begin(115200);
 
-  uint16_t serialCount = 0;
   while (!Serial) {
-    if(serialCount++ > 1000) {
-      isSerial = false;
-      break;
-    }
-    delay(1);
+    delay(10);
   }
 
   pinMode(LED_PIN_YELLOW, OUTPUT);
@@ -39,24 +41,27 @@ void setup() {
 
   pinMode(PIN_START_SAMPLE_BUTTON, INPUT);
 
-  SERIAL_PRINT_TEXT("Adafruit VL6180x test!"); 
+  Serial.println("Adafruit VL6180x test!"); 
   if (! vl.begin(wire)) {
-    SERIAL_PRINT_TEXT("Failed to find sensor");
+    Serial.println("Failed to find sensor");
     while (1);
   }
-  SERIAL_PRINT_TEXT("Sensor found!");
+  Serial.println("Sensor found!");
 
   digitalWrite(LED_PIN_GREEN, HIGH);
 
+  Serial.println("Initialisation for calibration done.");
 }
 
 void loop() {
   if(digitalRead(PIN_START_SAMPLE_BUTTON)) {
     isCalibrating = true;
+    Serial.print("Please insert reference distance for calibration in mm: ");
+    refDistance_mm = Serial.read();
     digitalWrite(LED_PIN_RED, HIGH);
     digitalWrite(LED_PIN_GREEN, LOW);
 
-    SERIAL_PRINT_TEXT("Start new sample series.")
+    Serial.println("Start calibration.");
   }
   
   while(isCalibrating) {
@@ -64,11 +69,46 @@ void loop() {
     uint8_t status = vl.readRangeStatus();
 
     if (status == VL6180X_ERROR_NONE) {
-      Serial.print("Range: "); Serial.println(range);
+      samples[sample_count] = range;
+      ++sample_count;
+      Serial.print("Sample ");
+      Serial.print(sample_count);
+      Serial.print(": ");
+      Serial.println(range);
+    } else {
+      // Some error occurred, print it out!
+      evaluateError(status);
     }
 
-    // Some error occurred, print it out!
-    
+    if(sample_count == MAX_SAMPLES){
+      isCalibrating = false;
+
+      float average = averageValue(samples);
+      Serial.print("Average of samples is ");
+      Serial.println(average);
+
+      float avrgDistance = distance(refDistance_mm, average);
+      Serial.print("Average distance to refence Value is ");
+      Serial.println(avrgDistance);
+      if (avrgDistance > MAX_DISTANCE) {
+        Serial.println("Offset calibration needs to be done.");
+      } else {
+        Serial.println("Offset calibration needs to be done.");
+      }
+
+      sample_count = 0;
+      digitalWrite(LED_PIN_RED, LOW);
+      digitalWrite(LED_PIN_GREEN, HIGH);
+    }
+
+    delay(50);
+  }
+
+
+  delay(50);
+}
+
+void evaluateError(uint8_t status) {
     if  ((status >= VL6180X_ERROR_SYSERR_1) && (status <= VL6180X_ERROR_SYSERR_5)) {
       Serial.println("System error");
     }
@@ -96,19 +136,22 @@ void loop() {
     else if (status == VL6180X_ERROR_RANGEOFLOW) {
       Serial.println("Range reading overflow");
     }
+}
 
-    sample_count++;
+float averageValue(const uint8_t *samplesPtr) {
+  uint32_t sum = 0;
 
-    if(sample_count == MAX_SAMPLES){
-      isCalibrating = false;
-      sample_count = 0;
-      digitalWrite(LED_PIN_RED, LOW);
-      digitalWrite(LED_PIN_GREEN, HIGH);
-    }
-
-    delay(50);
+  for(uint8_t i = 0; i < MAX_SAMPLES; i++) {
+    sum += samplesPtr[i];
   }
 
+  return (float) sum/MAX_SAMPLES;
+}
 
-  delay(50);
+float distance(float value1, float value2) {
+  if (value1 >= value2) {
+    return value1 - value2;
+  } else {
+    return value2 - value1;
+  }
 }
