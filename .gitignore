@@ -39,3 +39,6 @@ build/
 # Backups
 *.FCBak
 >>>>>>> Stashed changes
+
+# stl files
+*.stl
