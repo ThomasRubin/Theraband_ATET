@@ -30,6 +30,13 @@
 *.exe
 *.out
 *.app
+<<<<<<< HEAD
 
 # build directories
 build/
+
+# Backups
+*.FCBak
+
+# stl files
+*.stl
